@@ -57,7 +57,54 @@
       <div class="overlay-box">
         <p id="overlay-title">GAME OVER</p>
         <p id="overlay-score"></p>
-        <button id="restart-btn">Reiniciar</button>
+        <p id="overlay-stats"></p>
+
+        <div id="overlay-records">
+          <div id="save-score-form" class="save-score-form hidden">
+            <span class="highlight-msg">¡Nuevo récord! Introduce tu nombre</span>
+            <div class="save-score-row">
+              <input id="player-name-input" type="text" maxlength="12" placeholder="Tu nombre" autocomplete="off" />
+              <button id="save-score-btn">Guardar</button>
+            </div>
+          </div>
+
+          <div class="highscore-block">
+            <span class="label">TOP 5</span>
+            <div id="overlay-highscores" class="highscore-table"></div>
+          </div>
+
+          <div class="best-stats">
+            <span>Mejor combo: <strong id="overlay-best-combo">0</strong></span>
+            <span>Líneas máx: <strong id="overlay-max-lines">0</strong></span>
+          </div>
+
+          <button id="reset-records-overlay" class="secondary-btn">Reiniciar récords</button>
+        </div>
+
+        <div class="overlay-actions">
+          <button id="restart-btn">Reiniciar</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="start-screen" class="overlay">
+      <div class="overlay-box start-box">
+        <p class="start-title">TETRIS</p>
+
+        <div class="highscore-block">
+          <span class="label">TOP 5</span>
+          <div id="start-highscores" class="highscore-table"></div>
+        </div>
+
+        <div class="best-stats">
+          <span>Mejor combo: <strong id="start-best-combo">0</strong></span>
+          <span>Líneas máx: <strong id="start-max-lines">0</strong></span>
+        </div>
+
+        <div class="overlay-actions">
+          <button id="start-btn">Jugar</button>
+          <button id="reset-records-start" class="secondary-btn">Reiniciar récords</button>
+        </div>
       </div>
     </div>
 
