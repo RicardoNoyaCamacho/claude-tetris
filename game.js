@@ -57,6 +57,14 @@ const overlayTitle = document.getElementById('overlay-title');
 const overlayScore = document.getElementById('overlay-score');
 const restartBtn = document.getElementById('restart-btn');
 const themeToggleBtn = document.getElementById('theme-toggle');
+const pauseOverlay = document.getElementById('pause-overlay');
+const resumeBtn = document.getElementById('resume-btn');
+const pauseRestartBtn = document.getElementById('pause-restart-btn');
+const toggleControlsBtn = document.getElementById('toggle-controls-btn');
+const pauseControls = document.getElementById('pause-controls');
+const startLevelSelect = document.getElementById('start-level-select');
+
+const MAX_START_LEVEL = 15;
 
 const THEME_STORAGE_KEY = 'tetris-theme';
 
@@ -73,6 +81,7 @@ function applyTheme(theme) {
 const singleStockEl = document.getElementById('single-stock');
 
 let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId, singleStock;
+let startLevel = 1;
 
 function createBoard() {
   return Array.from({ length: ROWS }, () => new Array(COLS).fill(0));
@@ -295,14 +304,36 @@ function togglePause() {
   if (gameOver) return;
   paused = !paused;
   if (!paused) {
+    closePauseMenu();
     lastTime = performance.now();
     loop(lastTime);
   } else {
     cancelAnimationFrame(animId);
-    overlayTitle.textContent = 'PAUSA';
-    overlayScore.textContent = '';
-    overlay.classList.remove('hidden');
+    openPauseMenu();
   }
+}
+
+function openPauseMenu() {
+  pauseControls.classList.add('hidden');
+  toggleControlsBtn.setAttribute('aria-expanded', 'false');
+  toggleControlsBtn.textContent = 'Ver controles';
+  startLevelSelect.value = String(startLevel);
+  pauseOverlay.classList.remove('hidden');
+}
+
+function closePauseMenu() {
+  pauseOverlay.classList.add('hidden');
+}
+
+function populateLevelSelect() {
+  startLevelSelect.innerHTML = '';
+  for (let lvl = 1; lvl <= MAX_START_LEVEL; lvl++) {
+    const option = document.createElement('option');
+    option.value = String(lvl);
+    option.textContent = String(lvl);
+    startLevelSelect.appendChild(option);
+  }
+  startLevelSelect.value = String(startLevel);
 }
 
 function loop(ts) {
@@ -327,23 +358,24 @@ function init() {
   board = createBoard();
   score = 0;
   lines = 0;
-  level = 1;
+  level = startLevel;
   singleStock = 0;
   paused = false;
   gameOver = false;
-  dropInterval = 1000;
+  dropInterval = Math.max(100, 1000 - (level - 1) * 90);
   dropAccum = 0;
   lastTime = performance.now();
   next = randomPiece();
   spawn();
   updateHUD();
   overlay.classList.add('hidden');
+  closePauseMenu();
   cancelAnimationFrame(animId);
   animId = requestAnimationFrame(loop);
 }
 
 document.addEventListener('keydown', e => {
-  if (e.code === 'KeyP') { togglePause(); return; }
+  if (e.code === 'KeyP' || e.code === 'Escape') { togglePause(); return; }
   if (paused || gameOver) return;
   switch (e.code) {
     case 'ArrowLeft':
@@ -372,10 +404,30 @@ document.addEventListener('keydown', e => {
 
 restartBtn.addEventListener('click', init);
 
+resumeBtn.addEventListener('click', () => {
+  if (paused) togglePause();
+});
+
+pauseRestartBtn.addEventListener('click', () => {
+  init();
+});
+
+toggleControlsBtn.addEventListener('click', () => {
+  const show = pauseControls.classList.contains('hidden');
+  pauseControls.classList.toggle('hidden', !show);
+  toggleControlsBtn.setAttribute('aria-expanded', String(show));
+  toggleControlsBtn.textContent = show ? 'Ocultar controles' : 'Ver controles';
+});
+
+startLevelSelect.addEventListener('change', e => {
+  startLevel = parseInt(e.target.value, 10);
+});
+
 themeToggleBtn.addEventListener('click', () => {
   const isLight = document.body.classList.contains('light');
   applyTheme(isLight ? 'dark' : 'light');
 });
 
 applyTheme(localStorage.getItem(THEME_STORAGE_KEY) === 'light' ? 'light' : 'dark');
+populateLevelSelect();
 init();
