@@ -117,8 +117,20 @@ function applyTheme(theme) {
   localStorage.setItem(THEME_STORAGE_KEY, theme);
 }
 const singleStockEl = document.getElementById('single-stock');
+const bestComboEl = document.getElementById('best-combo');
+const bestLinesEl = document.getElementById('best-lines');
+const recordsListEl = document.getElementById('records-list');
+const resetRecordsBtn = document.getElementById('reset-records-btn');
+const overlayRecordsEl = document.getElementById('overlay-records');
+const nameEntryEl = document.getElementById('name-entry');
+const playerNameInput = document.getElementById('player-name');
+const saveRecordBtn = document.getElementById('save-record-btn');
 
-let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId, singleStock;
+const RECORDS_KEY = 'tetris-records';
+const STATS_KEY = 'tetris-stats';
+const MAX_RECORDS = 5;
+
+let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId, singleStock, combo, maxCombo, maxLineClear;
 let menuView = 'main';
 let startLevel = 1;
 
@@ -210,7 +222,12 @@ function clearLines() {
     level = Math.floor(lines / 10) + 1;
     dropInterval = Math.max(100, 1000 - (level - 1) * 90);
     if (cleared === 4) singleStock = Math.min(singleStock + 1, MAX_SINGLE_STOCK);
+    combo++;
+    maxCombo = Math.max(maxCombo, combo);
+    maxLineClear = Math.max(maxLineClear, cleared);
     updateHUD();
+  } else {
+    combo = -1;
   }
 }
 
@@ -416,6 +433,84 @@ function drawNext() {
       drawBlock(nextCtx, offX + c, offY + r, shape[r][c], NB);
 }
 
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function loadRecords() {
+  try {
+    const data = JSON.parse(localStorage.getItem(RECORDS_KEY));
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
+
+function loadStats() {
+  try {
+    const data = JSON.parse(localStorage.getItem(STATS_KEY));
+    return { bestCombo: data?.bestCombo || 0, bestLineClear: data?.bestLineClear || 0 };
+  } catch {
+    return { bestCombo: 0, bestLineClear: 0 };
+  }
+}
+
+function updateStats() {
+  const stats = loadStats();
+  stats.bestCombo = Math.max(stats.bestCombo, maxCombo);
+  stats.bestLineClear = Math.max(stats.bestLineClear, maxLineClear);
+  localStorage.setItem(STATS_KEY, JSON.stringify(stats));
+}
+
+function renderStats() {
+  const stats = loadStats();
+  bestComboEl.textContent = stats.bestCombo;
+  bestLinesEl.textContent = stats.bestLineClear;
+}
+
+function qualifiesForTop(scoreValue) {
+  if (scoreValue <= 0) return false;
+  const records = loadRecords();
+  return records.length < MAX_RECORDS || scoreValue > records[records.length - 1].score;
+}
+
+function addRecord(name, scoreValue) {
+  const records = loadRecords();
+  const entry = { name: name || 'JUGADOR', score: scoreValue, lines };
+  records.push(entry);
+  records.sort((a, b) => b.score - a.score);
+  const trimmed = records.slice(0, MAX_RECORDS);
+  localStorage.setItem(RECORDS_KEY, JSON.stringify(trimmed));
+  return { records: trimmed, idx: trimmed.indexOf(entry) };
+}
+
+function renderRecordsList(target, records, highlightIdx) {
+  target.innerHTML = '';
+  if (!records.length) {
+    const li = document.createElement('li');
+    li.className = 'records-empty';
+    li.textContent = 'Sin récords todavía';
+    target.appendChild(li);
+    return;
+  }
+  records.forEach((r, i) => {
+    const li = document.createElement('li');
+    if (i === highlightIdx) li.classList.add('highlight');
+    li.innerHTML = `<span class="rec-rank">${i + 1}</span><span class="rec-name">${escapeHtml(r.name)}</span><span class="rec-score">${r.score.toLocaleString()}</span>`;
+    target.appendChild(li);
+  });
+}
+
+function submitRecord() {
+  const name = playerNameInput.value.trim().slice(0, 10);
+  const { records, idx } = addRecord(name, score);
+  renderRecordsList(overlayRecordsEl, records, idx);
+  renderRecordsList(recordsListEl, records);
+  nameEntryEl.classList.add('hidden');
+}
+
 function endGame() {
   gameOver = true;
   cancelAnimationFrame(animId);
@@ -424,6 +519,17 @@ function endGame() {
   pauseMenu.classList.add('hidden');
   controlsPanel.classList.add('hidden');
   restartBtn.classList.remove('hidden');
+  updateStats();
+  renderStats();
+  if (qualifiesForTop(score)) {
+    nameEntryEl.classList.remove('hidden');
+    playerNameInput.value = '';
+    overlayRecordsEl.innerHTML = '';
+    setTimeout(() => playerNameInput.focus(), 0);
+  } else {
+    nameEntryEl.classList.add('hidden');
+    renderRecordsList(overlayRecordsEl, loadRecords());
+  }
   overlay.classList.remove('hidden');
 }
 
@@ -433,6 +539,8 @@ function openPauseMenu() {
   overlayScore.textContent = '';
   restartBtn.classList.add('hidden');
   controlsPanel.classList.add('hidden');
+  nameEntryEl.classList.add('hidden');
+  overlayRecordsEl.innerHTML = '';
   pauseMenu.classList.remove('hidden');
   overlay.classList.remove('hidden');
 }
@@ -494,6 +602,9 @@ function init() {
   lines = 0;
   level = startLevel;
   singleStock = 0;
+  combo = -1;
+  maxCombo = 0;
+  maxLineClear = 0;
   paused = false;
   gameOver = false;
   dropInterval = Math.max(100, 1000 - (level - 1) * 90);
@@ -557,7 +668,26 @@ themeToggleBtn.addEventListener('click', () => {
 
 skinSelect.addEventListener('change', e => applySkin(e.target.value));
 
+saveRecordBtn.addEventListener('click', submitRecord);
+playerNameInput.addEventListener('keydown', e => {
+  if (e.code === 'Enter') {
+    e.preventDefault();
+    submitRecord();
+  }
+});
+
+resetRecordsBtn.addEventListener('click', () => {
+  if (!confirm('¿Borrar todos los récords y estadísticas?')) return;
+  localStorage.removeItem(RECORDS_KEY);
+  localStorage.removeItem(STATS_KEY);
+  renderRecordsList(recordsListEl, []);
+  renderRecordsList(overlayRecordsEl, []);
+  renderStats();
+});
+
 applySkin(localStorage.getItem(SKIN_STORAGE_KEY) || 'retro');
 applyTheme(localStorage.getItem(THEME_STORAGE_KEY) === 'light' ? 'light' : 'dark');
 populateStartLevelSelect();
+renderRecordsList(recordsListEl, loadRecords());
+renderStats();
 init();
