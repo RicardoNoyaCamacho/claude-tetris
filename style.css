@@ -236,3 +236,110 @@ kbd {
 #restart-btn:hover {
   background: var(--restart-hover);
 }
+
+/* ---- Records ---- */
+.best-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11px;
+  color: var(--controls-color);
+}
+
+.records-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 12px;
+}
+
+.records-list li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text);
+}
+
+.records-empty {
+  color: var(--controls-color);
+  font-family: inherit;
+}
+
+.rec-rank {
+  width: 14px;
+  color: var(--label-color);
+}
+
+.rec-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rec-score {
+  color: var(--value-color);
+  font-weight: 700;
+}
+
+.records-list li.highlight {
+  color: var(--overlay-title-color);
+  font-weight: 700;
+}
+
+.reset-btn {
+  align-self: flex-start;
+  background: transparent;
+  border: 1px solid var(--kbd-border);
+  color: var(--controls-color);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.reset-btn:hover {
+  background: var(--kbd-bg);
+  color: var(--text);
+}
+
+.name-entry {
+  display: flex;
+  gap: 8px;
+}
+
+.name-entry.hidden {
+  display: none;
+}
+
+#player-name {
+  background: var(--kbd-bg);
+  border: 1px solid var(--kbd-border);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 13px;
+  width: 120px;
+}
+
+#save-record-btn {
+  background: var(--restart-bg);
+  color: var(--restart-color);
+  border: none;
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+#save-record-btn:hover {
+  background: var(--restart-hover);
+}
+
+#overlay-records {
+  max-width: 220px;
+}
